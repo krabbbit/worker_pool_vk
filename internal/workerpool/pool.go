@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-func New(jobs int) *Pool {
+func NewWorkerpool(jobs int) *Pool {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Pool{
 		jobs:    make(chan string, jobs),
@@ -18,15 +18,26 @@ func New(jobs int) *Pool {
 	}
 }
 
-func (wp *Pool) Add() {
+func (wp *Pool) GetWorkers() []*worker {
+	return wp.workers
+}
+
+func (wp *Pool) Add() error {
 	wp.mu.Lock()
 	defer wp.mu.Unlock()
 
+	select {
+	case <-wp.ctx.Done():
+		return fmt.Errorf("workerpool is closed")
+	default:
+	}
+
 	id := len(wp.workers)
-	wp.workers = append(wp.workers, &worker{id: id, exit: make(chan struct{})})
+	exit := make(chan struct{})
+	wp.workers = append(wp.workers, &worker{id: id, exit: exit})
 
 	wp.wg.Add(1)
-	go func(id int) {
+	go func(id int, exit chan struct{}) {
 		defer wp.wg.Done()
 		for {
 			select {
@@ -34,14 +45,24 @@ func (wp *Pool) Add() {
 				if !ok {
 					return
 				}
-				fmt.Println(id, job)
-			case <-wp.workers[id].exit:
+				fmt.Printf("worker_id: %d, job: %s \n", id, job)
+			case <-exit:
 				return
 			case <-wp.ctx.Done():
 				return
 			}
 		}
-	}(id)
+	}(id, exit)
+	return nil
+}
+
+func (wp *Pool) AddJob(job string) error {
+	select {
+	case wp.jobs <- job:
+		return nil
+	case <-wp.ctx.Done():
+		return fmt.Errorf("workerpool is closed")
+	}
 }
 
 func (wp *Pool) Delete() error {
@@ -49,7 +70,7 @@ func (wp *Pool) Delete() error {
 	defer wp.mu.Unlock()
 
 	if len(wp.workers) == 0 {
-		return fmt.Errorf("worker pool is empty")
+		return fmt.Errorf("workerpool is empty")
 	}
 
 	last := len(wp.workers) - 1
@@ -66,5 +87,9 @@ func (wp *Pool) Shutdown() {
 		close(w.exit)
 	}
 	close(wp.jobs)
+	wp.wg.Wait()
+}
+
+func (wp *Pool) Wait() {
 	wp.wg.Wait()
 }

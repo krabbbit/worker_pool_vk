@@ -20,7 +20,8 @@ type worker struct {
 }
 
 type WorkerPool interface {
-	Add()
+	Add() error
+	AddJob(job string) error
 	Delete() error
 	Shutdown()
 }
