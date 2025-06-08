@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/krabbbit/worker_pool_vk/internal/workerpool"
 	"github.com/stretchr/testify/assert"
-	"worker_pool_vk/internal/workerpool"
 )
 
 func TestAll(t *testing.T) {

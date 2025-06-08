@@ -35,25 +35,28 @@ func (wp *pool) AddWorker() error {
 	id := len(wp.workers)
 	exit := make(chan struct{})
 	wp.workers = append(wp.workers, &worker{id: id, exit: exit})
-
 	wp.wg.Add(1)
-	go func(id int, exit chan struct{}) {
-		defer wp.wg.Done()
-		for {
-			select {
-			case job, ok := <-wp.jobs:
-				if !ok {
-					return
-				}
-				fmt.Printf("worker_id: %d, job: %s \n", id, job)
-			case <-exit:
-				return
-			case <-wp.ctx.Done():
+
+	go wp.work(id, exit)
+
+	return nil
+}
+
+func (wp *pool) work(id int, exit chan struct{}) {
+	defer wp.wg.Done()
+	for {
+		select {
+		case job, ok := <-wp.jobs:
+			if !ok {
 				return
 			}
+			fmt.Printf("worker_id: %d, job: %s \n", id, job)
+		case <-exit:
+			return
+		case <-wp.ctx.Done():
+			return
 		}
-	}(id, exit)
-	return nil
+	}
 }
 
 func (wp *pool) AddJob(job string) error {

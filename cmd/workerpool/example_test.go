@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/krabbbit/worker_pool_vk/internal/workerpool"
 	"strconv"
-	"worker_pool_vk/internal/workerpool"
 )
 
 func Example_workerPoolVk() {
