@@ -1,4 +1,4 @@
-module worker_pool_vk
+module github.com/krabbbit/worker_pool_vk
 
 go 1.24
 
