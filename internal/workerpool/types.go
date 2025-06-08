@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-type Pool struct {
+type pool struct {
 	wg      *sync.WaitGroup
 	jobs    chan string
 	workers []*worker
@@ -20,8 +20,10 @@ type worker struct {
 }
 
 type WorkerPool interface {
-	Add() error
+	AddWorker() error
 	AddJob(job string) error
 	Delete() error
 	Shutdown()
+	Wait()
+	GetWorkersCount() int
 }

@@ -6,9 +6,9 @@ import (
 	"sync"
 )
 
-func NewWorkerpool(jobs int) *Pool {
+func New(jobs int) WorkerPool {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &Pool{
+	return &pool{
 		jobs:    make(chan string, jobs),
 		wg:      &sync.WaitGroup{},
 		workers: []*worker{},
@@ -18,11 +18,11 @@ func NewWorkerpool(jobs int) *Pool {
 	}
 }
 
-func (wp *Pool) GetWorkers() []*worker {
-	return wp.workers
+func (wp *pool) GetWorkersCount() int {
+	return len(wp.workers)
 }
 
-func (wp *Pool) Add() error {
+func (wp *pool) AddWorker() error {
 	wp.mu.Lock()
 	defer wp.mu.Unlock()
 
@@ -56,7 +56,13 @@ func (wp *Pool) Add() error {
 	return nil
 }
 
-func (wp *Pool) AddJob(job string) error {
+func (wp *pool) AddJob(job string) error {
+	select {
+	case <-wp.ctx.Done():
+		return fmt.Errorf("workerpool is closed")
+	default:
+	}
+
 	select {
 	case wp.jobs <- job:
 		return nil
@@ -65,7 +71,7 @@ func (wp *Pool) AddJob(job string) error {
 	}
 }
 
-func (wp *Pool) Delete() error {
+func (wp *pool) Delete() error {
 	wp.mu.Lock()
 	defer wp.mu.Unlock()
 
@@ -79,17 +85,18 @@ func (wp *Pool) Delete() error {
 	return nil
 }
 
-func (wp *Pool) Shutdown() {
-	wp.cancel()
+func (wp *pool) Shutdown() {
 	wp.mu.Lock()
 	defer wp.mu.Unlock()
+	wp.cancel()
 	for _, w := range wp.workers {
 		close(w.exit)
 	}
 	close(wp.jobs)
+	wp.workers = nil
 	wp.wg.Wait()
 }
 
-func (wp *Pool) Wait() {
+func (wp *pool) Wait() {
 	wp.wg.Wait()
 }
