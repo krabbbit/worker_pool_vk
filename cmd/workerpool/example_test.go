@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func Example_workerPoolVk() {
+func ExampleWorkerPool() {
 	wp := workerpool.New(5)
 	for i := 0; i < 5; i++ {
 		_ = wp.AddWorker()
