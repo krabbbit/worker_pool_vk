@@ -14,7 +14,7 @@ func main() {
 	flag.Parse()
 
 	if *jobsNum < 1 {
-		fmt.Println("job queue capacity must be greater than 1")
+		fmt.Println("job queue capacity must be greater than 0")
 		os.Exit(1)
 	}
 
