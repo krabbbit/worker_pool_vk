@@ -25,6 +25,7 @@ func New(jobs int) WorkerPool {
 
 // GetWorkersCount returns the current number of active workers in the pool.
 func (wp *pool) GetWorkersCount() int {
+	var _ WorkerPool = (*pool)(nil)
 	return len(wp.workers)
 }
 
