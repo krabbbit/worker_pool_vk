@@ -13,6 +13,11 @@ func main() {
 	jobsNum := flag.Int("cap", 10, "job queue capacity")
 	flag.Parse()
 
+	if *jobsNum < 1 {
+		fmt.Println("job queue capacity must be greater than 1")
+		os.Exit(1)
+	}
+
 	wp := workerpool.New(*jobsNum)
 	fmt.Printf("Worker pool started (jobsNum: %d)\n", *jobsNum)
 	fmt.Println("Type 'help' for commands")
