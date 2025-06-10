@@ -36,13 +36,11 @@ type worker struct {
 // - AddJob: enqueues job for processing
 // - Delete: removes most recent worker
 // - Shutdown: initiates graceful shutdown
-// - Wait: blocks until all workers complete
 // - GetWorkersCount: returns current worker count
 type WorkerPool interface {
 	AddWorker() error
 	AddJob(job string) error
 	Delete() error
 	Shutdown()
-	Wait()
 	GetWorkersCount() int
 }

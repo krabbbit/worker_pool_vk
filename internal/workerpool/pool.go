@@ -119,8 +119,3 @@ func (wp *pool) Shutdown() {
 	wp.workers = nil
 	wp.wg.Wait()
 }
-
-// Wait blocks until all workers have finished processing.
-func (wp *pool) Wait() {
-	wp.wg.Wait()
-}

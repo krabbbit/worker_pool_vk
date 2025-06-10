@@ -7,7 +7,7 @@ import (
 )
 
 func ExampleWorkerPool() {
-	// Create a new worker pool with initial capacity of 5 workers
+	// Create a new worker pool with initial capacity of 5 jobs
 	wp := workerpool.New(5)
 
 	// Add 5 workers to the pool (total now: 5)
