@@ -1,11 +1,16 @@
+// Package workerpool provides concurrent job processing using a configurable worker pool.
 package workerpool
 
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"sync"
+	"time"
 )
 
+// New creates a new WorkerPool with the specified job queue capacity.
+// The pool starts with zero workers - call AddWorker() to add them.
 func New(jobs int) WorkerPool {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &pool{
@@ -18,10 +23,13 @@ func New(jobs int) WorkerPool {
 	}
 }
 
+// GetWorkersCount returns the current number of active workers in the pool.
 func (wp *pool) GetWorkersCount() int {
 	return len(wp.workers)
 }
 
+// AddWorker creates and adds a new worker to the pool.
+// Returns error if the pool is closed.
 func (wp *pool) AddWorker() error {
 	wp.mu.Lock()
 	defer wp.mu.Unlock()
@@ -37,12 +45,17 @@ func (wp *pool) AddWorker() error {
 	wp.workers = append(wp.workers, &worker{id: id, exit: exit})
 	wp.wg.Add(1)
 
-	go wp.work(id, exit)
+	go wp.work(id, exit, doJob)
 
 	return nil
 }
 
-func (wp *pool) work(id int, exit chan struct{}) {
+func doJob(job string, id int) {
+	time.Sleep(time.Duration(500+rand.Intn(1500)) * time.Millisecond)
+	fmt.Printf("worker_id: %d, job: %s \n", id, job)
+}
+
+func (wp *pool) work(id int, exit chan struct{}, doJob func(job string, id int)) {
 	defer wp.wg.Done()
 	for {
 		select {
@@ -50,7 +63,7 @@ func (wp *pool) work(id int, exit chan struct{}) {
 			if !ok {
 				return
 			}
-			fmt.Printf("worker_id: %d, job: %s \n", id, job)
+			doJob(job, id)
 		case <-exit:
 			return
 		case <-wp.ctx.Done():
@@ -59,6 +72,8 @@ func (wp *pool) work(id int, exit chan struct{}) {
 	}
 }
 
+// AddJob adds a new job to the worker pool queue.
+// Returns error if the pool is closed or full.
 func (wp *pool) AddJob(job string) error {
 	select {
 	case <-wp.ctx.Done():
@@ -74,6 +89,8 @@ func (wp *pool) AddJob(job string) error {
 	}
 }
 
+// Delete removes the most recently added worker from the pool.
+// Returns error if the pool is empty.
 func (wp *pool) Delete() error {
 	wp.mu.Lock()
 	defer wp.mu.Unlock()
@@ -88,6 +105,8 @@ func (wp *pool) Delete() error {
 	return nil
 }
 
+// Shutdown gracefully stops all workers and cleans up resources.
+// Waits for all in-progress jobs to complete.
 func (wp *pool) Shutdown() {
 	wp.mu.Lock()
 	defer wp.mu.Unlock()
@@ -100,6 +119,7 @@ func (wp *pool) Shutdown() {
 	wp.wg.Wait()
 }
 
+// Wait blocks until all workers have finished processing.
 func (wp *pool) Wait() {
 	wp.wg.Wait()
 }
