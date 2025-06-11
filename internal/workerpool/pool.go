@@ -115,7 +115,8 @@ func (wp *pool) Shutdown() {
 	for _, w := range wp.workers {
 		close(w.exit)
 	}
-	close(wp.jobs)
-	wp.workers = nil
-	wp.wg.Wait()
+	go func() {
+		close(wp.jobs)
+		wp.wg.Wait()
+	}()
 }
